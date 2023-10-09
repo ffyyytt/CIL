@@ -95,7 +95,7 @@ class Learner(BaseLearner):
         self._network.to(self._device)
         
         
-        if self._cur_task == 0:
+        if self._cur_task > -1:
 
             # Freeze the parameters for ViT.
             total_params = sum(p.numel() for p in self._network.parameters())
@@ -120,9 +120,7 @@ class Learner(BaseLearner):
             self._init_train(train_loader, test_loader, optimizer, scheduler)
             self.construct_dual_branch_network()
         else:
-            pass
-        
-        self.replace_fc(train_loader_for_protonet, self._network, None)
+            self.replace_fc(train_loader_for_protonet, self._network, None)
             
 
     def construct_dual_branch_network(self):
@@ -139,12 +137,8 @@ class Learner(BaseLearner):
             for i, (_, inputs, targets) in enumerate(train_loader):
                 inputs, targets = inputs.to(self._device), targets.to(self._device)
                 cos = self._network(inputs)["logits"]
-                theta = torch.acos(cos)
-                cos_add = torch.cos(theta + 0.2)
-                label = torch.nn.functional.one_hot(targets, num_classes=self._total_classes)
-                logits = label*cos_add + (1 - label)*cos
 
-                loss = F.cross_entropy(logits, targets)
+                loss = F.cross_entropy(cos, targets)
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
