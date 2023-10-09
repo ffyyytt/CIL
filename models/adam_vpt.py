@@ -138,7 +138,11 @@ class Learner(BaseLearner):
             correct, total = 0, 0
             for i, (_, inputs, targets) in enumerate(train_loader):
                 inputs, targets = inputs.to(self._device), targets.to(self._device)
-                logits = self._network(inputs)["logits"]
+                cos = self._network(inputs)["logits"]
+                theta = torch.acos(cos)
+                cos_add = torch.cos(theta + 0.2)
+                label = torch.nn.functional.one_hot(targets, num_classes=self._total_classes)
+                logits = label*cos_add + (1 - label)*cos
 
                 loss = F.cross_entropy(logits, targets)
                 optimizer.zero_grad()
@@ -146,7 +150,7 @@ class Learner(BaseLearner):
                 optimizer.step()
                 losses += loss.item()
 
-                _, preds = torch.max(logits, dim=1)
+                _, preds = torch.max(cos, dim=1)
                 correct += preds.eq(targets.expand_as(preds)).cpu().sum()
                 total += len(targets)
 
