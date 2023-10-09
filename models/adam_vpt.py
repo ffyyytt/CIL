@@ -120,8 +120,8 @@ class Learner(BaseLearner):
             self._init_train(train_loader, test_loader, optimizer, scheduler)
             self.construct_dual_branch_network()
         else:
-            self.replace_fc(train_loader_for_protonet, self._network, None)
-            
+            pass
+        self.replace_fc(train_loader_for_protonet, self._network, None)    
 
     def construct_dual_branch_network(self):
         network = MultiBranchCosineIncrementalNet(self.args, True)
