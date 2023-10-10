@@ -140,7 +140,6 @@ class Learner(BaseLearner):
             scheduler=optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=self.args['tuned_epoch'], eta_min=self.min_lr)
 
             self._init_train(train_loader, test_loader, optimizer, scheduler, self.args['tuned_epoch'])
-            self.construct_dual_branch_network()
         self.replace_fc(train_loader_for_protonet, self._network, None)    
 
     def construct_dual_branch_network(self):
