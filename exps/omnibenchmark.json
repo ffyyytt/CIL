@@ -12,7 +12,7 @@
     "device": ["0"],
     "seed": [1993],
     
-	"init_epoch": 40,
+	"init_epoch": 20,
     "tuned_epoch":2,
     "init_lr":2e-2,
 	"tuned_lr":1e-5,
