@@ -119,7 +119,6 @@ class Learner(BaseLearner):
 
             self._init_train(train_loader, test_loader, optimizer, scheduler, self.args['init_epoch'])
             self.construct_dual_branch_network()
-        """
         else:
             total_params = sum(p.numel() for p in self._network.parameters())
             print(f'{total_params:,} total parameters.')
@@ -134,14 +133,13 @@ class Learner(BaseLearner):
                         print(name, param.numel())
 
             if self.args['optimizer']=='sgd':
-                optimizer = optim.SGD(self._network.parameters(), momentum=0.9, lr=self.init_lr,weight_decay=self.weight_decay)
+                optimizer = optim.SGD(self._network.parameters(), momentum=0.9, lr=self.args['tuned_lr'],weight_decay=self.weight_decay)
             elif self.args['optimizer']=='adam':
-                optimizer=optim.AdamW(self._network.parameters(), lr=self.init_lr, weight_decay=self.weight_decay)
+                optimizer=optim.AdamW(self._network.parameters(), lr=self.args['tuned_lr'], weight_decay=self.weight_decay)
             # optimizer=optim.AdamW(self._network.parameters(), lr=self.init_lr, weight_decay=self.weight_decay)
             scheduler=optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=self.args['tuned_epoch'], eta_min=self.min_lr)
 
             self._init_train(train_loader, test_loader, optimizer, scheduler, self.args['tuned_epoch'])
-        """
         self.replace_fc(train_loader_for_protonet, self._network, None)    
 
     def construct_dual_branch_network(self):
