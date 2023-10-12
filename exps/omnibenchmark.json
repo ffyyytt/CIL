@@ -7,8 +7,8 @@
     "shuffle": true,
     "init_cls": 30,
     "increment": 30,
-    "model_name": "simplecil",
-    "convnet_type": "pretrained_vit_b16_224_in21k",
+    "model_name": "adam_adapter",
+    "convnet_type": "pretrained_vit_b16_224_in21k_adapter",
     "device": ["0"],
     "seed": [1993],
     
