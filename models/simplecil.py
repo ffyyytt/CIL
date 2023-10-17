@@ -1,3 +1,4 @@
+import sklearn
 import logging
 import numpy as np
 import torch
@@ -7,6 +8,7 @@ from tqdm import tqdm
 from torch import optim
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
+from skmultiflow.lazy import KNNClassifier
 from utils.inc_net import IncrementalNet,SimpleCosineIncrementalNet,SimpleVitNet
 from models.base import BaseLearner
 from utils.toolkit import target2onehot, tensor2numpy
@@ -29,14 +31,29 @@ class Learner(BaseLearner):
         embedding_list = []
         label_list = []
         with torch.no_grad():
-            for i, batch in enumerate(trainloader):
+            for i, batch in enumerate(tqdm(trainloader)):
                 (_,data,label)=batch
                 data=data.cuda()
                 label=label.cuda()
                 embedding=model.convnet(data)
                 embedding_list.append(embedding.cpu())
                 label_list.append(label.cpu())
-        embedding_list = torch.cat(embedding_list, dim=0)
+
+                if not self.knn:
+                    self.knn = KNNClassifier(n_neighbors=1, 
+                                             max_window_size=100000,
+                                             leaf_size=1000,
+                                             metric="euclidean")
+                    self.knn_manhattan = KNNClassifier(n_neighbors=1, 
+                                                       max_window_size=1000000, 
+                                                       leaf_size=1000,
+                                                       metric="manhattan")
+                    self.features = embedding
+                    self.labels = label
+                else:
+                    self.features = torch.cat((self.features, embedding), dim=0)
+                    self.labels = torch.cat((self.labels, label), dim=0)
+        embedding_list = torch.nn.functional.normalize(torch.cat(embedding_list, dim=0), dim=-1)
         label_list = torch.cat(label_list, dim=0)
 
         class_list=np.unique(self.train_dataset.labels)
@@ -45,8 +62,14 @@ class Learner(BaseLearner):
             # print('Replacing...',class_index)
             data_index=(label_list==class_index).nonzero().squeeze(-1)
             embedding=embedding_list[data_index]
-            proto=embedding.mean(0)
+            embedding=torch.nn.functional.normalize(embedding, dim=-1)
+            cos = torch.matmul(embedding, embedding.transpose(0, 1))
+            cos = (1-torch.mean(cos, dim = 1))**2.8
+            proto = (cos[:, None]*embedding).mean(0) / cos.mean(0)
             self._network.fc.weight.data[class_index]=proto
+            
+        self.knn.partial_fit(embedding_list.detach().cpu().numpy(), label_list)
+        self.knn_manhattan.partial_fit(embedding_list.detach().cpu().numpy(), label_list)
         return model
 
    

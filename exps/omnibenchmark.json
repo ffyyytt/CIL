@@ -7,21 +7,18 @@
     "shuffle": true,
     "init_cls": 30,
     "increment": 30,
-    "model_name": "adam_adapter",
-    "convnet_type": "pretrained_vit_b16_224_in21k_adapter",
+    "model_name": "simplecil",
+    "convnet_type": "pretrained_vit_b16_224_in21k",
     "device": ["0"],
-    "seed": [1993],
+    "seed": [1312],
     
-	"init_epoch": 20,
-    "tuned_epoch":2,
-    "init_lr":2e-2,
-	"tuned_lr":1e-5,
-    "batch_size":64,
-    "weight_decay":0.0005,
-    "min_lr":0,
-    "ffn_num":64,
+    "tuned_epoch":20,
+    "init_lr":0.01,
+    "batch_size":256,
+    "weight_decay":0.05,
+    "min_lr":1e-8,
     "optimizer":"sgd",
-    "vpt_type":"deep",
-    "prompt_token_num":5
+    "vpt_type":"shallow",
+    "prompt_token_num":3
 }
 

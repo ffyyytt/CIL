@@ -115,55 +115,38 @@ class Learner(BaseLearner):
             elif self.args['optimizer']=='adam':
                 optimizer=optim.AdamW(self._network.parameters(), lr=self.init_lr, weight_decay=self.weight_decay)
             # optimizer=optim.AdamW(self._network.parameters(), lr=self.init_lr, weight_decay=self.weight_decay)
-            scheduler=optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=self.args['init_epoch'], eta_min=self.min_lr)
-
-            self._init_train(train_loader, test_loader, optimizer, scheduler, self.args['init_epoch'])
-            self.construct_dual_branch_network()
-        else:
-            total_params = sum(p.numel() for p in self._network.parameters())
-            print(f'{total_params:,} total parameters.')
-            total_trainable_params = sum(
-                p.numel() for p in self._network.parameters() if p.requires_grad)
-            print(f'{total_trainable_params:,} training parameters.')
-
-            # if some parameters are trainable, print the key name and corresponding parameter number
-            if total_params != total_trainable_params:
-                for name, param in self._network.named_parameters():
-                    if param.requires_grad:
-                        print(name, param.numel())
-
-            if self.args['optimizer']=='sgd':
-                optimizer = optim.SGD(self._network.parameters(), momentum=0.9, lr=self.args['tuned_lr'],weight_decay=self.weight_decay)
-            elif self.args['optimizer']=='adam':
-                optimizer=optim.AdamW(self._network.parameters(), lr=self.args['tuned_lr'], weight_decay=self.weight_decay)
-            # optimizer=optim.AdamW(self._network.parameters(), lr=self.init_lr, weight_decay=self.weight_decay)
             scheduler=optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=self.args['tuned_epoch'], eta_min=self.min_lr)
 
-            self._init_train(train_loader, test_loader, optimizer, scheduler, self.args['tuned_epoch'])
-        self.replace_fc(train_loader_for_protonet, self._network, None)    
+            self._init_train(train_loader, test_loader, optimizer, scheduler)
+            self.construct_dual_branch_network()
+        else:
+            pass
+        
+        self.replace_fc(train_loader_for_protonet, self._network, None)
+            
 
     def construct_dual_branch_network(self):
         network = MultiBranchCosineIncrementalNet(self.args, True)
         network.construct_dual_branch_network(self._network)
         self._network=network.to(self._device)
 
-    def _init_train(self, train_loader, test_loader, optimizer, scheduler, epochs):
-        prog_bar = tqdm(range(epochs))
+    def _init_train(self, train_loader, test_loader, optimizer, scheduler):
+        prog_bar = tqdm(range(self.args['tuned_epoch']))
         for _, epoch in enumerate(prog_bar):
             self._network.train()
             losses = 0.0
             correct, total = 0, 0
             for i, (_, inputs, targets) in enumerate(train_loader):
                 inputs, targets = inputs.to(self._device), targets.to(self._device)
-                cos = self._network(inputs)["logits"]
+                logits = self._network(inputs)["logits"]
 
-                loss = F.cross_entropy(cos, targets)
+                loss = F.cross_entropy(logits, targets)
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
                 losses += loss.item()
 
-                _, preds = torch.max(cos, dim=1)
+                _, preds = torch.max(logits, dim=1)
                 correct += preds.eq(targets.expand_as(preds)).cpu().sum()
                 total += len(targets)
 
@@ -174,7 +157,7 @@ class Learner(BaseLearner):
                 info = "Task {}, Epoch {}/{} => Loss {:.3f}, Train_accy {:.2f}".format(
                     self._cur_task,
                     epoch + 1,
-                    epochs,
+                    self.args['tuned_epoch'],
                     losses / len(train_loader),
                     train_acc,
                 )
@@ -183,7 +166,7 @@ class Learner(BaseLearner):
                 info = "Task {}, Epoch {}/{} => Loss {:.3f}, Train_accy {:.2f}, Test_accy {:.2f}".format(
                     self._cur_task,
                     epoch + 1,
-                    epochs,
+                    self.args['tuned_epoch'],
                     losses / len(train_loader),
                     train_acc,
                     test_acc,
