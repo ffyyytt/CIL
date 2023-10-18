@@ -163,7 +163,6 @@ class BaseLearner(object):
                     vectors = torch.nn.functional.normalize(self._network.extract_vector(inputs), dim=-1)
                 outputs_fc = self._network(inputs)["logits"].cpu()
                 outputs_knn = self.knn.predict_proba(tensor2numpy(vectors))
-                outputs_knn_manhattan = self.knn_manhattan.predict_proba(tensor2numpy(vectors))
                 cos = torch.matmul(vectors, self.features.transpose(0, 1))
             predicts = torch.topk(cos, k=20*self.topk, dim=1, largest=True, sorted=True)[1]
             predicts = predicts.cpu().numpy()
@@ -181,8 +180,7 @@ class BaseLearner(object):
             output = torch.nn.functional.softmax(torch.from_numpy(outputs_cos0), dim=0) + \
                      0.9*torch.nn.functional.softmax(torch.from_numpy(outputs_cos1), dim=0) +\
                      2.4*torch.nn.functional.softmax(8*outputs_fc, dim=0) + \
-                     torch.from_numpy(outputs_knn) + \
-                     torch.from_numpy(outputs_knn_manhattan) 
+                     torch.from_numpy(outputs_knn)
 
             predicts = torch.topk(output, k=self.topk, dim=1, largest=True, sorted=True)[1]
             targets = targets.cpu()
