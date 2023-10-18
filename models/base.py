@@ -170,12 +170,12 @@ class BaseLearner(object):
             outputs_cos0 = np.zeros([len(predicts), len(set(self.labels.cpu().numpy().tolist()))])
             for i in range(len(predicts)):
                 for j, k in enumerate(predicts[i]):
-                    outputs_cos[i][self.labelmap[k]] += 1/(2.5**j)
+                    outputs_cos0[i][self.labelmap[k]] += 1/(2.5**j)
                     
             outputs_cos1 = np.zeros([len(predicts), len(set(self.labels.cpu().numpy().tolist()))])
             for i in range(len(predicts)):
                 for j, k in enumerate(predicts[i]):
-                    outputs_cos[i][self.labelmap[k]] += 1
+                    outputs_cos1[i][self.labelmap[k]] += 1
             
             output = torch.nn.functional.softmax(torch.from_numpy(outputs_cos0), dim=0) + \
                      0.9*torch.nn.functional.softmax(torch.from_numpy(outputs_cos1), dim=0) +\
